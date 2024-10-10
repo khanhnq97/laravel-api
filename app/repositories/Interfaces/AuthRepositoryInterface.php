@@ -3,13 +3,7 @@
 namespace App\Repositories\Interfaces;
 
 /**
- * Interface UserRepositoryInterface
+ * Interface AuthRepositoryInterface
  * @package App\Repositories\Interfaces
  */
-interface UserRepositoryInterface
-{
-    public function create(array $data);
-    public function find($id);
-    public function findByEmail($email);
-    public function update($id, array $data);
-}
+interface AuthRepositoryInterface {}

@@ -19,7 +19,7 @@ Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1'], f
     // Authentication
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
-    Route::post('logout', [AuthController::class, 'logout'])->middleware('auth.jwt');
+    Route::get('logout', [AuthController::class, 'logout'])->middleware('auth.jwt');
     Route::post('change-password', [AuthController::class, 'changePassword'])->middleware('auth.jwt');
     Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('send-verification-email', [AuthController::class, 'sendVerificationEmail']);

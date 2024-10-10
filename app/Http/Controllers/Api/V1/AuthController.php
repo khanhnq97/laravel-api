@@ -3,234 +3,214 @@
 namespace App\Http\Controllers\Api\V1;
 
 use Illuminate\Http\Request;
-use App\Services\JWTService;
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Validator;
-use App\Models\EmailVerification;
-use App\Models\PasswordReset;
 
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
+use App\Models\User;
+use App\Services\JWTService;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\V1\Auth\ForgotPasswordRequest;
+use App\Http\Requests\V1\Auth\ResetPasswordRequest;
+use App\Http\Requests\V1\Auth\VerifyEmailRequest;
+use App\Http\Requests\V1\Auth\LoginRequest;
+use App\Http\Requests\V1\Auth\RegisterRequest;
+use App\Http\Resources\UserResource;
+use App\Services\AuthService;
 
 
 class AuthController extends Controller
 {
     private JWTService $jwtService;
+    protected $authService;
 
-    public function __construct(JWTService $jwtService)
+    public function __construct(JWTService $jwtService, AuthService $authService)
     {
         $this->jwtService = $jwtService;
+        $this->authService = $authService;
     }
 
-    public function register(Request $request)
+    /**
+     * Register a new user.
+     *
+     * @param \App\Http\Requests\V1\Auth\RegisterRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function register(RegisterRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6',
-        ]);
+        try {
+            // Register the user with the given data
+            $user = $this->authService->register($request->validated());
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
+            // Return a JSON response with the created user and a success message
+            return response()->json([
+                'message' => 'User successfully registered. Please check your email to verify your account.',
+                'user' => new UserResource($user)
+            ], 201);
+        } catch (\Exception $e) {
+            // Return a JSON response with an error message if the registration fails
+            return response()->json(['message' => 'Failed to register user'], 500);
         }
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-
-        // Gửi email xác minh
-        $token = Str::random(60);
-        EmailVerification::create([
-            'user_id' => $user->id,
-            'token' => $token,
-            'expires_at' => now()->addHours(24)
-        ]);
-
-        Mail::send('emails.verify', ['token' => $token], function ($message) use ($user) {
-            $message->to($user->email);
-            $message->subject('Verify Your Email Address');
-            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-        });
-
-        return response()->json([
-            'message' => 'User successfully registered. Please check your email to verify your account.',
-            'user' => $user
-        ], 201);
     }
 
-
-    public function login(Request $request)
+    /**
+     * Log in a user.
+     *
+     * @param \App\Http\Requests\V1\Auth\LoginRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function login(LoginRequest $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        try {
+            // Authenticate the user with the given credentials
+            $token = $this->authService->login($request->validated());
 
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
+            // Return a JSON response with the JWT token
+            return response()->json(['token' => $token]);
+        } catch (\Exception $e) {
+            // Return a JSON response with an error message if the authentication fails
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
-
-        $token = $this->jwtService->encode([
-            'sub' => $user->id,
-            'email' => $user->email,
-            'iat' => time(),
-            'exp' => time() + (60 * 60) // Token expires in 1 hour
-        ]);
-
-        return response()->json(['token' => $token]);
     }
+    /**
+     * Log out the user.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function logout(Request $request)
     {
-        // Trong JWT, logout thường được xử lý ở phía client
-        // Ở phía server, chúng ta có thể thêm token vào blacklist nếu cần
-        return response()->json(['message' => 'Logged out successfully']);
+        try {
+            // Call the logout method of the AuthService
+            $this->authService->logout();
+
+            // Return a JSON response with a success message
+            return response()->json(['message' => 'Successfully logged out']);
+        } catch (\Exception $e) {
+            // Return a JSON response with an error message if the logout fails
+            return response()->json(['message' => 'Logout failed'], 500);
+        }
     }
 
+    /**
+     * Change the password for a user with the given ID.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function changePassword(Request $request)
     {
-        $request->validate([
-            'current_password' => 'required',
-            'new_password' => 'required|min:6|different:current_password',
-        ]);
+        try {
+            // Validate the request data
+            $request->validate([
+                'current_password' => 'required',
+                'new_password' => 'required|min:6|different:current_password',
+            ]);
 
-        // Lấy user_id từ request, được set bởi JwtAuthenticate middleware
-        $userId = $request->user_id;
-        $user = User::findOrFail($userId);
+            // Get the user ID from the request and find the user
+            $userId = $request->user_id;
+            $user = User::findOrFail($userId);
 
-        if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json(['message' => 'Current password is incorrect'], 400);
+            // Check the current password
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json(['message' => 'Current password is incorrect'], 400);
+            }
+
+            // Update the user's password
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+
+            // Return a JSON response with a success message
+            return response()->json(['message' => 'Password was changed successfully']);
+        } catch (\Exception $e) {
+            // Return a JSON response with an error message if the password change fails
+            return response()->json(['message' => 'Failed to change password'], 500);
         }
-
-        $user->password = Hash::make($request->new_password);
-        $user->save();
-
-        return response()->json(['message' => 'Password changed successfully']);
     }
 
-    public function sendVerificationEmail(Request $request)
+    /**
+     * Sends a verification email to the user with the given email address.
+     *
+     * @param \App\Http\Requests\V1\Auth\VerifyEmailRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function sendVerificationEmail(VerifyEmailRequest $request)
     {
-        $user = User::where('email', $request->email)->firstOrFail();
+        try {
+            // Send the verification email to the user with the given email
+            $this->authService->sendVerificationEmail($request->email);
 
-        if ($user->email_verified_at) {
-            return response()->json(['message' => 'Email already verified'], 400);
+            // Return a JSON response with a success message
+            return response()->json(['message' => 'Verification email sent']);
+        } catch (\Exception $e) {
+            // Return a JSON response with an error message if the verification email fails
+            return response()->json(['message' => 'Failed to send verification email'], 500);
         }
-
-        $token = Str::random(60);
-
-        EmailVerification::updateOrCreate(
-            ['user_id' => $user->id],
-            ['token' => $token, 'expires_at' => now()->addHours(24)]
-        );
-
-        // Gửi email xác minh
-        Mail::send('emails.verify', ['token' => $token], function ($message) use ($user) {
-            $message->to($user->email);
-            $message->subject('Verify Your Email Address');
-            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-        });
-
-        return response()->json(['message' => 'Verification email sent']);
     }
 
-    public function verifyEmail(Request $request)
+    /**
+     * Verify the user's email address.
+     *
+     * @param \App\Http\Requests\V1\Auth\VerifyEmailRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function verifyEmail(VerifyEmailRequest $request)
     {
-        $token = $request->token;
+        try {
+            // Verify the user's email address
+            $result = $this->authService->verifyEmail($request->token);
 
-        $verification = EmailVerification::where('token', $token)
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if (!$verification) {
-            return response()->json(['message' => 'Invalid or expired token'], 400);
+            // Return a JSON response with the result
+            return response()->json($result);
+        } catch (\Exception $e) {
+            // Return a JSON response with an error message if the verification fails
+            return response()->json(['message' => 'Verification failed'], 500);
         }
-
-        $user = User::find($verification->user_id);
-
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-
-        if ($user->email_verified_at) {
-            return response()->json(['message' => 'Email already verified'], 400);
-        }
-
-        $user->email_verified_at = now();
-        $user->save();
-
-        $verification->delete();
-
-        $token = $this->jwtService->encode([
-            'sub' => $user->id,
-            'email' => $user->email,
-            'iat' => time(),
-            'exp' => time() + (60 * 60) // Token expires in 1 hour
-        ]);
-
-        return response()->json([
-            'message' => 'Email verified successfully',
-            'token' => $token
-        ]);
     }
 
-    public function forgotPassword(Request $request)
+    /**
+     * Handle a forgot password request.
+     *
+     * This function is responsible for handling the forgot password request.
+     * It will send a password reset link to the user's email address.
+     *
+     * @param \App\Http\Requests\V1\Auth\ForgotPasswordRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function forgotPassword(ForgotPasswordRequest $request)
     {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-        ]);
+        try {
+            // Send a password reset link to the user's email address
+            $this->authService->forgotPassword($request->email);
 
-        $token = Str::random(60);
-
-        PasswordReset::updateOrCreate(
-            ['email' => $request->email],
-            [
-                'token' => $token,
-                'created_at' => now()
-            ]
-        );
-
-        // Gửi email với link đặt lại mật khẩu
-        Mail::send('emails.reset_password', ['token' => $token], function ($message) use ($request) {
-            $message->to($request->email);
-            $message->subject('Reset Your Password');
-            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-        });
-
-        return response()->json(['message' => 'Password reset link sent to your email']);
+            // Return a JSON response with a success message
+            return response()->json(['message' => 'Password reset link sent to your email']);
+        } catch (\Exception $e) {
+            // Return a JSON response with an error message if the request fails
+            return response()->json(['message' => 'Failed to send password reset link'], 500);
+        }
     }
 
-    public function resetPassword(Request $request)
+    /**
+     * Reset the password for a user with the given email and token.
+     *
+     * This function is responsible for resetting the password for a user with the given email and token.
+     * It will validate the request data and call the resetPassword method of the AuthService class.
+     * If the request is successful, it will return a JSON response with a success message.
+     * If the request fails, it will return a JSON response with an error message.
+     *
+     * @param \App\Http\Requests\V1\Auth\ResetPasswordRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function resetPassword(ResetPasswordRequest $request)
     {
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|min:8',
-        ]);
+        try {
+            // Validate the request data
+            $this->authService->resetPassword($request->validated());
 
-        $passwordReset = PasswordReset::where('email', $request->email)
-            ->where('token', $request->token)
-            ->first();
-
-        if (!$passwordReset) {
-            return response()->json(['message' => 'Invalid token'], 400);
+            // Return a JSON response with a success message
+            return response()->json(['message' => 'Password has been reset successfully']);
+        } catch (\Exception $e) {
+            // Return a JSON response with an error message if the request fails
+            return response()->json(['message' => 'Something went wrong'], 500);
         }
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-
-        $user->password = Hash::make($request->password);
-        $user->save();
-
-        PasswordReset::where('email', $request->email)->delete();
-
-        return response()->json(['message' => 'Password has been reset successfully']);
     }
 }
