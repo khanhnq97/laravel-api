@@ -36,17 +36,14 @@ class AuthService
      */
     public function register(array $data)
     {
-        // Create a new user with the given data
         $user = $this->userRepository->create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
 
-        // Send a verification email to the new user
         $this->sendVerificationEmail($user->email);
 
-        // Return the newly created user
         return $user;
     }
 
@@ -58,10 +55,8 @@ class AuthService
      */
     public function sendVerificationEmail($email)
     {
-        // Get the user with the given email address
         $user = $this->userRepository->findByEmail($email);
 
-        // Generate a random token
         $token = Str::random(60);
 
         // Store the token in the email_verifications table
@@ -88,10 +83,8 @@ class AuthService
      */
     public function login(array $credentials)
     {
-        // Find the user with the given email address
         $user = $this->userRepository->findByEmail($credentials['email']);
 
-        // Check the password
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
             throw new \Exception('Invalid credentials');
         }
@@ -115,15 +108,12 @@ class AuthService
      */
     public function changePassword(array $data)
     {
-        // Retrieve the user with the given ID
         $user = $this->userRepository->find($data['user_id']);
 
-        // Check the current password
         if (!Hash::check($data['current_password'], $user->password)) {
             throw new \Exception('Current password is incorrect');
         }
 
-        // Update the user's password
         $this->userRepository->update($user->id, [
             'password' => Hash::make($data['new_password'])
         ]);

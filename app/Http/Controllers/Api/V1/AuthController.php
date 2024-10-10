@@ -37,16 +37,13 @@ class AuthController extends Controller
     public function register(RegisterRequest $request)
     {
         try {
-            // Register the user with the given data
             $user = $this->authService->register($request->validated());
 
-            // Return a JSON response with the created user and a success message
             return response()->json([
                 'message' => 'User successfully registered. Please check your email to verify your account.',
                 'user' => new UserResource($user)
             ], 201);
         } catch (\Exception $e) {
-            // Return a JSON response with an error message if the registration fails
             return response()->json(['message' => 'Failed to register user'], 500);
         }
     }
@@ -60,13 +57,10 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         try {
-            // Authenticate the user with the given credentials
             $token = $this->authService->login($request->validated());
 
-            // Return a JSON response with the JWT token
             return response()->json(['token' => $token]);
         } catch (\Exception $e) {
-            // Return a JSON response with an error message if the authentication fails
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
     }
@@ -79,13 +73,10 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
-            // Call the logout method of the AuthService
             $this->authService->logout();
 
-            // Return a JSON response with a success message
             return response()->json(['message' => 'Successfully logged out']);
         } catch (\Exception $e) {
-            // Return a JSON response with an error message if the logout fails
             return response()->json(['message' => 'Logout failed'], 500);
         }
     }
@@ -99,13 +90,11 @@ class AuthController extends Controller
     public function changePassword(Request $request)
     {
         try {
-            // Validate the request data
             $request->validate([
                 'current_password' => 'required',
                 'new_password' => 'required|min:6|different:current_password',
             ]);
 
-            // Get the user ID from the request and find the user
             $userId = $request->user_id;
             $user = User::findOrFail($userId);
 
@@ -118,10 +107,8 @@ class AuthController extends Controller
             $user->password = Hash::make($request->new_password);
             $user->save();
 
-            // Return a JSON response with a success message
             return response()->json(['message' => 'Password was changed successfully']);
         } catch (\Exception $e) {
-            // Return a JSON response with an error message if the password change fails
             return response()->json(['message' => 'Failed to change password'], 500);
         }
     }
@@ -135,13 +122,10 @@ class AuthController extends Controller
     public function sendVerificationEmail(VerifyEmailRequest $request)
     {
         try {
-            // Send the verification email to the user with the given email
             $this->authService->sendVerificationEmail($request->email);
 
-            // Return a JSON response with a success message
             return response()->json(['message' => 'Verification email sent']);
         } catch (\Exception $e) {
-            // Return a JSON response with an error message if the verification email fails
             return response()->json(['message' => 'Failed to send verification email'], 500);
         }
     }
@@ -155,13 +139,10 @@ class AuthController extends Controller
     public function verifyEmail(VerifyEmailRequest $request)
     {
         try {
-            // Verify the user's email address
             $result = $this->authService->verifyEmail($request->token);
 
-            // Return a JSON response with the result
             return response()->json($result);
         } catch (\Exception $e) {
-            // Return a JSON response with an error message if the verification fails
             return response()->json(['message' => 'Verification failed'], 500);
         }
     }
@@ -178,10 +159,8 @@ class AuthController extends Controller
     public function forgotPassword(ForgotPasswordRequest $request)
     {
         try {
-            // Send a password reset link to the user's email address
             $this->authService->forgotPassword($request->email);
 
-            // Return a JSON response with a success message
             return response()->json(['message' => 'Password reset link sent to your email']);
         } catch (\Exception $e) {
             // Return a JSON response with an error message if the request fails
@@ -203,13 +182,10 @@ class AuthController extends Controller
     public function resetPassword(ResetPasswordRequest $request)
     {
         try {
-            // Validate the request data
             $this->authService->resetPassword($request->validated());
 
-            // Return a JSON response with a success message
             return response()->json(['message' => 'Password has been reset successfully']);
         } catch (\Exception $e) {
-            // Return a JSON response with an error message if the request fails
             return response()->json(['message' => 'Something went wrong'], 500);
         }
     }
