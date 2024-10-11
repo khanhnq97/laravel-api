@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Jobs\SendVerifyEmail;
+use App\Jobs\SendWelcomeEmail;
 use App\Repositories\Interfaces\UserRepositoryInterface as UserRepository;
 use App\Repositories\EmailVerificationRepository;
 use App\Repositories\PasswordResetRepository;
@@ -42,7 +44,11 @@ class AuthService
             'password' => Hash::make($data['password']),
         ]);
 
-        $this->sendVerificationEmail($user->email);
+        // dispatch event send verification email
+        SendWelcomeEmail::dispatch($user);
+
+        // dispatch event send verification email
+        SendVerifyEmail::dispatch($user);
 
         return $user;
     }
@@ -55,22 +61,26 @@ class AuthService
      */
     public function sendVerificationEmail($email)
     {
-        $user = $this->userRepository->findByEmail($email);
+        try {
+            $user = $this->userRepository->findByEmail($email);
 
-        $token = Str::random(60);
+            $token = Str::random(60);
 
-        // Store the token in the email_verifications table
-        $this->emailVerificationRepository->updateOrCreate(
-            ['user_id' => $user->id],
-            ['token' => $token, 'expires_at' => now()->addHours(24)]
-        );
+            // Store the token in the email_verifications table
+            $this->emailVerificationRepository->updateOrCreate(
+                ['user_id' => $user->id],
+                ['token' => $token, 'expires_at' => now()->addHours(24)]
+            );
 
-        // Send the verification email
-        Mail::send('emails.verify', ['token' => $token], function ($message) use ($user) {
-            $message->to($user->email);
-            $message->subject('Verify Your Email Address');
-            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-        });
+            // Send the verification email
+            Mail::send('emails.verify', ['token' => $token], function ($message) use ($user) {
+                $message->to($user->email);
+                $message->subject('Verify Your Email Address');
+                $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+            });
+        } catch (\Throwable $th) {
+            throw $th;
+        }
     }
 
     /**
