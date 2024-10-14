@@ -10,6 +10,7 @@ use App\Repositories\PasswordResetRepository;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
+use App\Events\ForgotPassword;
 
 class AuthService
 {
@@ -155,19 +156,28 @@ class AuthService
         ];
     }
 
-    public function forgotPassword($email)
+    /**
+     * Sends a password reset link to the user with the given email address.
+     *
+     * @param  string  $email
+     * @return void
+     *
+     * @throws \Exception
+     */
+    public function forgotPassword(string $email): void
     {
         $token = Str::random(60);
 
-        $this->passwordResetRepository->updateOrCreate(
-            ['email' => $email],
-            ['token' => $token, 'created_at' => now()]
-        );
+        try {
+            $this->passwordResetRepository->updateOrCreate(
+                ['email' => $email],
+                ['token' => $token, 'created_at' => now()]
+            );
 
-        Mail::send('emails.reset_password', ['token' => $token], function ($message) use ($email) {
-            $message->to($email);
-            $message->subject('Reset Your Password');
-        });
+            event(new ForgotPassword($email, $token));
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to send password reset email', 500, $e);
+        }
     }
 
     public function resetPassword(array $data)
