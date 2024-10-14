@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 use App\Models\User;
-use App\Services\JWTService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\V1\Auth\ResetPasswordRequest;
@@ -14,35 +13,35 @@ use App\Http\Requests\V1\Auth\VerifyEmailRequest;
 use App\Http\Requests\V1\Auth\LoginRequest;
 use App\Http\Requests\V1\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
-use App\Jobs\SendWelcomeEmail;
 use App\Services\AuthService;
+use Illuminate\Http\JsonResponse;
+use Throwable;
 
 
 class AuthController extends Controller
 {
-    private JWTService $jwtService;
-    protected $authService;
+    protected AuthService $authService;
 
-    public function __construct(JWTService $jwtService, AuthService $authService)
+    public function __construct(AuthService $authService)
     {
-        $this->jwtService = $jwtService;
         $this->authService = $authService;
     }
 
     /**
      * Register a new user.
      *
-     * @param \App\Http\Requests\V1\Auth\RegisterRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param RegisterRequest $request
+     * @return JsonResponse
      */
-    public function register(RegisterRequest $request)
+    public function register(RegisterRequest $request): JsonResponse
     {
         try {
-            $user = $this->authService->register($request->validated());
+            $data = $request->validated();
+            $user = $this->authService->register($data);
 
             return response()->json([
                 'message' => 'User successfully registered. Please check your email to verify your account.',
-                'user' => new UserResource($user)
+                'user' => new UserResource($user),
             ], 201);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to register user'], 500);
@@ -52,10 +51,10 @@ class AuthController extends Controller
     /**
      * Log in a user.
      *
-     * @param \App\Http\Requests\V1\Auth\LoginRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param LoginRequest $request
+     * @return JsonResponse
      */
-    public function login(LoginRequest $request)
+    public function login(LoginRequest $request): JsonResponse
     {
         try {
             $token = $this->authService->login($request->validated());
@@ -68,14 +67,12 @@ class AuthController extends Controller
     /**
      * Log out the user.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
         try {
-            $this->authService->logout();
-
             return response()->json(['message' => 'Successfully logged out']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Logout failed'], 500);
@@ -85,10 +82,10 @@ class AuthController extends Controller
     /**
      * Change the password for a user with the given ID.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function changePassword(Request $request)
+    public function changePassword(Request $request): JsonResponse
     {
         try {
             $request->validate([
@@ -117,10 +114,11 @@ class AuthController extends Controller
     /**
      * Sends a verification email to the user with the given email address.
      *
-     * @param \App\Http\Requests\V1\Auth\VerifyEmailRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param VerifyEmailRequest $request
+     * @return JsonResponse
+     * @throws Throwable
      */
-    public function sendVerificationEmail(VerifyEmailRequest $request)
+    public function sendVerificationEmail(VerifyEmailRequest $request): JsonResponse
     {
         try {
             $this->authService->sendVerificationEmail($request->email);
@@ -134,10 +132,10 @@ class AuthController extends Controller
     /**
      * Verify the user's email address.
      *
-     * @param \App\Http\Requests\V1\Auth\VerifyEmailRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param VerifyEmailRequest $request
+     * @return JsonResponse
      */
-    public function verifyEmail(VerifyEmailRequest $request)
+    public function verifyEmail(VerifyEmailRequest $request): JsonResponse
     {
         try {
             $result = $this->authService->verifyEmail($request->token);
@@ -151,20 +149,15 @@ class AuthController extends Controller
     /**
      * Handle a forgot password request.
      *
-     * This function is responsible for handling the forgot password request.
-     * It will send a password reset link to the user's email address.
-     *
-     * @param \App\Http\Requests\V1\Auth\ForgotPasswordRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param ForgotPasswordRequest $request
+     * @return JsonResponse
      */
-    public function forgotPassword(ForgotPasswordRequest $request)
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
         try {
-            $this->authService->forgotPassword($request->email);
-
+            $this->authService->sendPasswordResetLink($request->input('email'));
             return response()->json(['message' => 'Password reset link sent to your email']);
         } catch (\Exception $e) {
-            // Return a JSON response with an error message if the request fails
             return response()->json(['message' => 'Failed to send password reset link'], 500);
         }
     }
@@ -177,10 +170,10 @@ class AuthController extends Controller
      * If the request is successful, it will return a JSON response with a success message.
      * If the request fails, it will return a JSON response with an error message.
      *
-     * @param \App\Http\Requests\V1\Auth\ResetPasswordRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param ResetPasswordRequest $request
+     * @return JsonResponse
      */
-    public function resetPassword(ResetPasswordRequest $request)
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
         try {
             $this->authService->resetPassword($request->validated());

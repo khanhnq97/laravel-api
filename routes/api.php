@@ -17,13 +17,13 @@ Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1'], f
     Route::apiResource('invoices', InvoiceController::class);
 
     // Authentication
-    Route::post('register', [AuthController::class, 'register']);
-    Route::post('login', [AuthController::class, 'login']);
-    Route::get('logout', [AuthController::class, 'logout'])->middleware('auth.jwt');
-    Route::post('change-password', [AuthController::class, 'changePassword'])->middleware('auth.jwt');
-    Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('send-verification-email', [AuthController::class, 'sendVerificationEmail']);
-    Route::get('verify-email', [AuthController::class, 'verifyEmail']);
-    Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('register', [AuthController::class, 'register'])->middleware('setLocale');
+    Route::post('login', [AuthController::class, 'login'])->middleware('setLocale');
+    Route::get('logout', [AuthController::class, 'logout'])->middleware(['auth.jwt', 'setLocale']);
+    Route::post('change-password', [AuthController::class, 'changePassword'])->middleware(['auth.jwt'])->middleware('setLocale');
+    Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('setLocale');
+    Route::post('send-verification-email', [AuthController::class, 'sendVerificationEmail'])->middleware('setLocale');
+    Route::get('verify-email', [AuthController::class, 'verifyEmail'])->middleware('setLocale');
+    Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('setLocale');
+    Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('setLocale');
 });

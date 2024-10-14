@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\V1\Auth;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Validation\Validator;
@@ -19,7 +20,7 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
@@ -35,12 +36,12 @@ class LoginRequest extends FormRequest
      * If the validation fails, throw a ValidationException
      * with the failed validator and a custom response.
      *
-     * @param  \Illuminate\Contracts\Validation\Validator  $validator
+     * @param Validator $validator
      * @return void
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
-    public function failedValidation(Validator $validator)
+    public function failedValidation(Validator $validator): void
     {
         // Throw a ValidationException with the failed validator and a custom response
         // The response will be a JSON response with a 401 status code
@@ -49,5 +50,20 @@ class LoginRequest extends FormRequest
             'message' => 'Validation errors',
             'data' => $validator->errors()
         ], 401));
+    }
+
+    /**
+     * Get the error messages for the defined validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+          return [
+            'email.required' => __('validation.custom.email.required'),
+            'email.email' => __('validation.custom.email.email'),
+            'password.required' => __('validation.custom.password.required'),
+            'password.min' => __('validation.custom.password.min'),
+        ];
     }
 }

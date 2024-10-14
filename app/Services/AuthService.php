@@ -4,20 +4,23 @@ namespace App\Services;
 
 use App\Jobs\SendVerifyEmail;
 use App\Jobs\SendWelcomeEmail;
+use App\Models\User;
 use App\Repositories\Interfaces\UserRepositoryInterface as UserRepository;
 use App\Repositories\EmailVerificationRepository;
 use App\Repositories\PasswordResetRepository;
+use Exception;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use App\Events\ForgotPassword;
+use Throwable;
 
 class AuthService
 {
-    protected $userRepository;
-    protected $emailVerificationRepository;
-    protected $jwtService;
-    protected $passwordResetRepository;
+    protected UserRepository $userRepository;
+    protected EmailVerificationRepository $emailVerificationRepository;
+    protected JWTService $jwtService;
+    protected PasswordResetRepository $passwordResetRepository;
 
     public function __construct(
         UserRepository $userRepository,
@@ -35,9 +38,9 @@ class AuthService
      * Registers a new user with the given data and sends a verification email.
      *
      * @param array $data
-     * @return \App\Models\User
+     * @return User
      */
-    public function register(array $data)
+    public function register(array $data): mixed
     {
         $user = $this->userRepository->create([
             'name' => $data['name'],
@@ -46,10 +49,10 @@ class AuthService
         ]);
 
         // dispatch event send verification email
-        SendWelcomeEmail::dispatch($user);
+        SendWelcomeEmail::dispatch(arguments: $user);
 
         // dispatch event send verification email
-        SendVerifyEmail::dispatch($user);
+        SendVerifyEmail::dispatch(arguments: $user);
 
         return $user;
     }
@@ -59,29 +62,26 @@ class AuthService
      *
      * @param string $email
      * @return void
+     * @throws Throwable
      */
-    public function sendVerificationEmail($email)
+    public function sendVerificationEmail(string $email):void
     {
-        try {
-            $user = $this->userRepository->findByEmail($email);
+        $user = $this->userRepository->findByEmail(email: $email);
 
-            $token = Str::random(60);
+        $token = Str::random(length: 60);
 
-            // Store the token in the email_verifications table
-            $this->emailVerificationRepository->updateOrCreate(
-                ['user_id' => $user->id],
-                ['token' => $token, 'expires_at' => now()->addHours(24)]
-            );
+        // Store the token in the email_verifications table
+        $this->emailVerificationRepository->updateOrCreate(
+            attributes: ['user_id' => $user->id],
+            values: ['token' => $token, 'expires_at' => now()->addHours(value: 24)]
+        );
 
-            // Send the verification email
-            Mail::send('emails.verify', ['token' => $token], function ($message) use ($user) {
-                $message->to($user->email);
-                $message->subject('Verify Your Email Address');
-                $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-            });
-        } catch (\Throwable $th) {
-            throw $th;
-        }
+        // Send the verification email
+        Mail::send(view: 'emails.verify', data: ['token' => $token], callback: function ($message) use ($user): void {
+            $message->to($user->email);
+            $message->subject('Verify Your Email Address');
+            $message->from(env(key: 'MAIL_FROM_ADDRESS'), env(key: 'MAIL_FROM_NAME'));
+        });
     }
 
     /**
@@ -90,14 +90,14 @@ class AuthService
      * @param array $credentials
      * @return string
      *
-     * @throws \Exception if the credentials are invalid
+     * @throws Exception if the credentials are invalid
      */
-    public function login(array $credentials)
+    public function login(array $credentials):string
     {
         $user = $this->userRepository->findByEmail($credentials['email']);
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
-            throw new \Exception('Invalid credentials');
+            throw new Exception('Invalid credentials');
         }
 
         // Encode the user's ID and email into a JWT
@@ -115,14 +115,14 @@ class AuthService
      * @param array $data
      * @return void
      *
-     * @throws \Exception if the current password is incorrect
+     * @throws Exception if the current password is incorrect
      */
-    public function changePassword(array $data)
+    public function changePassword(array $data):void
     {
         $user = $this->userRepository->find($data['user_id']);
 
         if (!Hash::check($data['current_password'], $user->password)) {
-            throw new \Exception('Current password is incorrect');
+            throw new Exception('Current password is incorrect');
         }
 
         $this->userRepository->update($user->id, [
@@ -131,12 +131,15 @@ class AuthService
     }
 
 
-    public function verifyEmail($token)
+    /**
+     * @throws Exception
+     */
+    public function verifyEmail($token): array
     {
         $verification = $this->emailVerificationRepository->findByToken($token);
 
         if (!$verification) {
-            throw new \Exception('Invalid or expired token');
+            throw new Exception('Invalid or expired token');
         }
 
         $user = $this->userRepository->find($verification->user_id);
@@ -162,9 +165,9 @@ class AuthService
      * @param  string  $email
      * @return void
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    public function forgotPassword(string $email): void
+    public function sendPasswordResetLink(string $email): void
     {
         $token = Str::random(60);
 
@@ -175,17 +178,20 @@ class AuthService
             );
 
             event(new ForgotPassword($email, $token));
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to send password reset email', 500, $e);
+        } catch (Exception $e) {
+            throw new Exception('Failed to send password reset email', 500, $e);
         }
     }
 
-    public function resetPassword(array $data)
+    /**
+     * @throws Exception
+     */
+    public function resetPassword(array $data): void
     {
         $passwordReset = $this->passwordResetRepository->findByEmailAndToken($data['email'], $data['token']);
 
         if (!$passwordReset) {
-            throw new \Exception('Invalid token');
+            throw new Exception('Invalid token');
         }
 
         $user = $this->userRepository->findByEmail($data['email']);
@@ -193,7 +199,7 @@ class AuthService
         $this->passwordResetRepository->deleteByEmail($data['email']);
     }
 
-    public function logout()
+    public function logout(): bool
     {
         return true;
     }
