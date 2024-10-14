@@ -7,6 +7,9 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class VerifyEmailRequest extends FormRequest
 {
+    public string $token;
+    public string $email;
+
     /**
      * Determine if the user is authorized to make this request.
      */

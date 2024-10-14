@@ -16,7 +16,7 @@ class InvoiceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request): InvoiceCollection
     {
         $filter = new InvoicesFilter();
         $queryItems =  $filter->transform($request); //['column', 'operator', 'value']
@@ -48,7 +48,7 @@ class InvoiceController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Invoice $invoice)
+    public function show(Invoice $invoice): InvoiceResource
     {
         return InvoiceResource::make($invoice);
     }

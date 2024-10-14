@@ -27,13 +27,13 @@ class SendReminderEmails extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): void
     {
         $users = User::whereNull('email_verified_at')->get();
 
         foreach ($users as $user) {
             Mail::to($user->email)->send(new ReminderEmail($user));
-            $this->info("Sent reminder email to: {$user->email}");
+            $this->info("Sent reminder email to: $user->email");
         }
 
         $this->info('Reminder emails sent successfully!');

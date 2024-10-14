@@ -6,7 +6,7 @@ use App\Filters\ApiFilter;
 
 class InvoicesFilter extends ApiFilter
 {
-    protected $safeParams = [
+    protected array $safeParams = [
         'customerId' => ['eq'],
         'amount' => ['eq', 'lt', 'lte', 'gt', 'gte'],
         'status' => ['eq', 'ne'],
@@ -14,13 +14,13 @@ class InvoicesFilter extends ApiFilter
         'paidDate' => ['eq', 'lt', 'lte', 'gt', 'gte'],
     ];
 
-    protected $columnMap = [
+    protected array $columnMap = [
         'customerId' => 'customer_id',
         'billedDate' => 'billed_dated',
         'paidDate' => 'paid_dated',
     ];
 
-    protected $operatorMap = [
+    protected array $operatorMap = [
         'eq' => '=',
         'lt' => '<',
         'lte' => '<=',

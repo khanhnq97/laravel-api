@@ -2,11 +2,17 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * @method static whereNull(string $string)
+ * @method static findOrFail(mixed $userId)
+ * @method static create(array $data)
+ * @method static where(string $string, string $email)
+ * @property mixed $email
+ */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;

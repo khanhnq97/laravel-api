@@ -6,7 +6,7 @@ use App\Filters\ApiFilter;
 
 class CustomersFilter extends ApiFilter
 {
-    protected $safeParams = [
+    protected array $safeParams = [
         'name' => ['eq'],
         'type' => ['eq'],
         'email' => ['eq'],
@@ -16,11 +16,11 @@ class CustomersFilter extends ApiFilter
         'postalCode' => ['eq', 'gt', 'lt'],
     ];
 
-    protected $columnMap = [
+    protected array $columnMap = [
         'postalCode' => 'postal_code',
     ];
 
-    protected $operatorMap = [
+    protected array $operatorMap = [
         'eq' => '=',
         'lt' => '<',
         'lte' => '<=',

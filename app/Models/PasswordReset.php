@@ -2,21 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-// class PasswordReset extends Model
-// {
-//     use HasFactory;
-
-//     protected $fillable = [
-//         'id',
-//         'email',
-//         'token',
-//     ];
-// }
-
-
+/**
+ * @method static updateOrCreate(array $attributes, array $values)
+ * @method static where(string $string, string $email)
+ */
 class PasswordReset extends Model
 {
     protected $fillable = ['email', 'token'];

@@ -4,7 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @method static create(array $all)
+ * @method static where(array $filterItems)
+ */
 class Customer extends Model
 {
     use HasFactory;
@@ -19,7 +24,7 @@ class Customer extends Model
         'postal_code',
     ];
 
-    public function invoices()
+    public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
     }

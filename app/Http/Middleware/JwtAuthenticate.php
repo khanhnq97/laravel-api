@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use App\Services\JwtService;
+use Exception;
 use Illuminate\Http\Request;
 use Firebase\JWT\ExpiredException;
 use Firebase\JWT\SignatureInvalidException;
@@ -28,11 +29,11 @@ class JwtAuthenticate
         try {
             $payload = $this->jwtService->decode($token);
             $request->merge(['user_id' => $payload->sub]);
-        } catch (ExpiredException $e) {
+        } catch (ExpiredException) {
             return response()->json(['message' => 'Token has expired'], 401);
-        } catch (SignatureInvalidException $e) {
+        } catch (SignatureInvalidException) {
             return response()->json(['message' => 'Invalid token signature'], 401);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return response()->json(['message' => 'Invalid token'], 401);
         }
 

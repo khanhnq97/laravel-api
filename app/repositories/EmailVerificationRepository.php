@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\EmailVerification;
-use App\Repositories\Interfaces\EmailVerificationRepositoryInterface;
+use App\repositories\Interfaces\EmailVerificationRepositoryInterface;
 
 class EmailVerificationRepository implements EmailVerificationRepositoryInterface
 {
@@ -12,14 +12,14 @@ class EmailVerificationRepository implements EmailVerificationRepositoryInterfac
         return EmailVerification::updateOrCreate($attributes, $values);
     }
 
-    public function findByToken($token)
+    public function findByToken(string $token)
     {
         return EmailVerification::where('token', $token)
             ->where('expires_at', '>', now())
             ->first();
     }
 
-    public function delete($id)
+    public function delete(string $id): int
     {
         return EmailVerification::destroy($id);
     }

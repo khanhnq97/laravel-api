@@ -6,12 +6,13 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use App\Services\AuthService;
 use App\Models\User;
+use Throwable;
 
 class SendVerifyEmail implements ShouldQueue
 {
     use Queueable;
 
-    protected $user;
+    protected User $user;
 
     /**
      * Create a new job instance.
@@ -24,6 +25,7 @@ class SendVerifyEmail implements ShouldQueue
 
     /**
      * Execute the job.
+     * @throws Throwable
      */
     public function handle(AuthService $authService): void
     {

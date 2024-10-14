@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
-use App\Repositories\Interfaces\EmailVerificationRepositoryInterface;
-use App\Repositories\Interfaces\UserRepositoryInterface;
-use App\Repositories\Interfaces\PasswordResetRepositoryInterface;
+use App\repositories\Interfaces\EmailVerificationRepositoryInterface;
+use App\repositories\Interfaces\UserRepositoryInterface;
+use App\repositories\Interfaces\PasswordResetRepositoryInterface;
 use App\Repositories\UserRepository;
 use App\Repositories\EmailVerificationRepository;
 use App\Repositories\PasswordResetRepository;

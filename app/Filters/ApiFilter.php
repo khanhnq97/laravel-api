@@ -6,13 +6,13 @@ use Illuminate\Http\Request;
 
 class ApiFilter
 {
-    protected $safeParams = [];
+    protected array $safeParams = [];
 
-    protected $columnMap = [];
+    protected array $columnMap = [];
 
-    protected $operatorMap = [];
+    protected array $operatorMap = [];
 
-    public function transform(Request $request)
+    public function transform(Request $request): array
     {
         $eloQuery = [];
         foreach ($this->safeParams as $param => $operators) {

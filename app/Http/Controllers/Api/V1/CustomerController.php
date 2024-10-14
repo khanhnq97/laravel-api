@@ -16,7 +16,7 @@ class CustomerController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request): CustomerCollection
     {
         $filter = new CustomersFilter();
         $filterItems =  $filter->transform($request); //['column', 'operator', 'value']
@@ -43,7 +43,7 @@ class CustomerController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreCustomerRequest $request)
+    public function store(StoreCustomerRequest $request): CustomerResource
     {
         return new CustomerResource(Customer::create($request->all()));
     }
@@ -51,7 +51,7 @@ class CustomerController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Customer $customer)
+    public function show(Customer $customer): CustomerResource
     {
         $includeInvoices = request()->query('includeInvoices');
         if ($includeInvoices) {
@@ -71,7 +71,7 @@ class CustomerController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCustomerRequest $request, Customer $customer)
+    public function update(UpdateCustomerRequest $request, Customer $customer): void
     {
         $customer->update($request->all());
     }

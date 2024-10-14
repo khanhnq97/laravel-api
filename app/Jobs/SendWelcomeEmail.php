@@ -15,14 +15,14 @@ class SendWelcomeEmail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $user;
+    protected User $user;
 
     public function __construct(User $user)
     {
         $this->user = $user;
     }
 
-    public function handle()
+    public function handle(): void
     {
         Mail::to($this->user->email)->send(new WelcomeEmail($this->user));
     }

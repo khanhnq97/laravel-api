@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Repositories\Interfaces\UserRepositoryInterface;
+use App\repositories\Interfaces\UserRepositoryInterface;
 use App\Models\User;
 
 /**
@@ -16,17 +16,17 @@ class UserRepository implements UserRepositoryInterface
         return User::create($data);
     }
 
-    public function find($id)
+    public function find(string $id)
     {
         return User::findOrFail($id);
     }
 
-    public function findByEmail($email)
+    public function findByEmail(string $email)
     {
         return User::where('email', $email)->first();
     }
 
-    public function update($id, array $data)
+    public function update(string $id, array $data)
     {
         $user = $this->find($id);
         $user->update($data);

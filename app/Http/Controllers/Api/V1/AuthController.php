@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -43,7 +44,7 @@ class AuthController extends Controller
                 'message' => 'User successfully registered. Please check your email to verify your account.',
                 'user' => new UserResource($user),
             ], 201);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return response()->json(['message' => 'Failed to register user'], 500);
         }
     }
@@ -60,21 +61,20 @@ class AuthController extends Controller
             $token = $this->authService->login($request->validated());
 
             return response()->json(['token' => $token]);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
     }
     /**
      * Log out the user.
      *
-     * @param Request $request
      * @return JsonResponse
      */
-    public function logout(Request $request): JsonResponse
+    public function logout(): JsonResponse
     {
         try {
             return response()->json(['message' => 'Successfully logged out']);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return response()->json(['message' => 'Logout failed'], 500);
         }
     }
@@ -106,7 +106,7 @@ class AuthController extends Controller
             $user->save();
 
             return response()->json(['message' => 'Password was changed successfully']);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return response()->json(['message' => 'Failed to change password'], 500);
         }
     }
@@ -124,7 +124,7 @@ class AuthController extends Controller
             $this->authService->sendVerificationEmail($request->email);
 
             return response()->json(['message' => 'Verification email sent']);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return response()->json(['message' => 'Failed to send verification email'], 500);
         }
     }
@@ -141,7 +141,7 @@ class AuthController extends Controller
             $result = $this->authService->verifyEmail($request->token);
 
             return response()->json($result);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return response()->json(['message' => 'Verification failed'], 500);
         }
     }
@@ -157,7 +157,7 @@ class AuthController extends Controller
         try {
             $this->authService->sendPasswordResetLink($request->input('email'));
             return response()->json(['message' => 'Password reset link sent to your email']);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return response()->json(['message' => 'Failed to send password reset link'], 500);
         }
     }
@@ -179,7 +179,7 @@ class AuthController extends Controller
             $this->authService->resetPassword($request->validated());
 
             return response()->json(['message' => 'Password has been reset successfully']);
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return response()->json(['message' => 'Something went wrong'], 500);
         }
     }

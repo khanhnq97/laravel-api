@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Repositories\Interfaces\AuthRepositoryInterface;
+use App\repositories\Interfaces\AuthRepositoryInterface;
 
 /**
  * Class AuthRepository

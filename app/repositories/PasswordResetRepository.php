@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\PasswordReset;
-use App\Repositories\Interfaces\PasswordResetRepositoryInterface;
+use App\repositories\Interfaces\PasswordResetRepositoryInterface;
 
 class PasswordResetRepository implements PasswordResetRepositoryInterface
 {
@@ -12,14 +12,14 @@ class PasswordResetRepository implements PasswordResetRepositoryInterface
         return PasswordReset::updateOrCreate($attributes, $values);
     }
 
-    public function findByEmailAndToken($email, $token)
+    public function findByEmailAndToken(string $email,string $token)
     {
         return PasswordReset::where('email', $email)
             ->where('token', $token)
             ->first();
     }
 
-    public function deleteByEmail($email)
+    public function deleteByEmail(string $email)
     {
         return PasswordReset::where('email', $email)->delete();
     }

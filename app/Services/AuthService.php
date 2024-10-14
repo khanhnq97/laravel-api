@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Jobs\SendVerifyEmail;
 use App\Jobs\SendWelcomeEmail;
 use App\Models\User;
-use App\Repositories\Interfaces\UserRepositoryInterface as UserRepository;
+use App\repositories\Interfaces\UserRepositoryInterface as UserRepository;
 use App\Repositories\EmailVerificationRepository;
 use App\Repositories\PasswordResetRepository;
 use Exception;
@@ -40,7 +40,7 @@ class AuthService
      * @param array $data
      * @return User
      */
-    public function register(array $data): mixed
+    public function register(array $data): User
     {
         $user = $this->userRepository->create([
             'name' => $data['name'],
@@ -49,10 +49,10 @@ class AuthService
         ]);
 
         // dispatch event send verification email
-        SendWelcomeEmail::dispatch(arguments: $user);
+        SendWelcomeEmail::dispatch($user);
 
         // dispatch event send verification email
-        SendVerifyEmail::dispatch(arguments: $user);
+        SendVerifyEmail::dispatch($user);
 
         return $user;
     }
